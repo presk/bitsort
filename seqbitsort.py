@@ -1,63 +1,48 @@
 import struct
+import random
 from collections import deque 
+import timeit
 
 ascending = '0'
 descending = '1'
 
 
-class Bitsort:
-    def __init__ (self, list):
-        self.list = list
-        slist = []
-        for i in range(len(list)):
-            slist.append(self.float2bin(list[i]))
-        self.slist = slist
-        self.oplist = deque()
+#Converts each float to a string of their 64 bit IEEE 754 big endian representation
+#Taken from JavDomGom: https://stackoverflow.com/questions/16444726/binary-representation-of-float-in-python-bits-not-hex
+def float2bin(f):
+    [d] = struct.unpack(">Q", struct.pack(">d", f))
+    return f'{d:064b}'
 
+#Swaps two values in both the string representation array and actual float array
+def swap(i, swapPos, flist, slist):
+    temp = flist[swapPos]
+    flist[swapPos] = flist[i]
+    flist[i] = temp
 
-    #Converts each float to a string of their 64 bit IEEE 754 big endian representation
-    #Taken from JavDomGom: https://stackoverflow.com/questions/16444726/binary-representation-of-float-in-python-bits-not-hex
-    def float2bin(self, f):
-        [d] = struct.unpack(">Q", struct.pack(">d", f))
-        return f'{d:064b}'
+    temp = slist[swapPos]
+    slist[swapPos] = slist[i]
+    slist[i] = temp
 
-
-    def swap(self, currentPos, swapPos):
-        temp = self.list[swapPos]
-        self.list[swapPos] = self.list[currentPos]
-        self.list[currentPos] = temp
-
-        temp = self.slist[swapPos]
-        self.slist[swapPos] = self.slist[currentPos]
-        self.slist[currentPos] = temp
-
-
-    def sort(self):
-        swapPos = 0
-        for i in range(len(self.slist)):
-            if self.slist[i][0] == descending:
-                self.swap(i, swapPos)
-                swapPos += 1
-        self.oplist.append([0, swapPos-1, 1, descending])
-        self.oplist.append([swapPos, len(self.slist)-1, 1, ascending])
-        while not self.oplist:
-            op = self.oplist.pop()
-            self.innersort(op[0], op[1], op[2], op[3])
-        return self.list
-    
-    
-    def innersort(self, start, end, bit, order):
-        #Defines the first leftmost location of a non-ordered number i.e. where a number to be moved
+#Recursive function that sorts subsections of arrays depending on which bit is selected
+#   0111111101010101010101010101010101010101010101010101010101010101
+#    ^                                                             ^
+#   highest weight bit, is sorted first                lowest weight bit, sorted last  
+#
+#
+# note1: the leftmost bit is the sign bit 
+# note2: Python does not have tail call optimization (TODO: find a sequential/iterative solution)                         
+def innersort(start, end, bit, order, flist, slist, oplist):
+    #Defines the first leftmost location of a non-ordered number i.e. where a number to be moved
         #gets to be placed without removing an already moved number
         swapPos = start
     
         #Checks if the current number's bit needs to be placed towards the left
         for i in range(start, end + 1):
-            if self.slist[i][bit] == order: 
+            if slist[i][bit] == order: 
                 #If the number should be moved towards the left and is not already in the leftmost position,
                 #swap it with the current number in the leftmost position
                 if not i == swapPos:
-                    self.swap( i, swapPos)
+                    swap( i, swapPos, flist, slist)
                 swapPos += 1
         #Checks for the edge case where all the bits are identical and not leftmost (all 0s, but 1 is leftmost)
         if swapPos == 0:
@@ -65,9 +50,63 @@ class Bitsort:
         #Execute recursively until you reach the last bit or until the sub-array's length is < 2
         if bit < 63 :  
             if start < swapPos-1:
-                self.oplist.append([start, swapPos-1, bit+1, order])
+                oplist.append([start, swapPos-1, bit+1, order])
                 #innersort(slist, start, swapPos-1, bit+1, order)
 
             if swapPos < end:
-                self.oplist.append([swapPos, end, bit+1, order])
+                oplist.append([swapPos, end, bit+1, order])
                 #innersort(slist, swapPos, end, bit+1, order)
+
+
+
+
+def bitsort(floatList):
+    #Split positive numbers from negative number and sets proper sorting order for each sub-array
+    #Note that the sorting is done in aboslute value, as such negative numbers are ordered
+    #from the biggest absolute values to the smallest vice versa for the positive numbers
+    #e.g. -9, -8, 8, 9   absolute negatives: 9, 8 (descending order) 
+    #                    absolute positive:  8, 9 (ascending order)
+    swapPos = 0
+    flist = floatList
+    slist = []
+    oplist = deque()
+    for i in range(len(flist)):
+        slist.append(float2bin(flist[i]))
+    for i in range(len(slist)):
+        if slist[i][0] == descending:
+            swap(i, swapPos, flist, slist)
+            swapPos += 1
+    oplist.append([0, swapPos-1, 1, descending])
+    oplist.append([swapPos, len(slist)-1, 1, ascending])
+    while oplist:
+        op = oplist.pop()
+        innersort(op[0], op[1], op[2], op[3], flist, slist, oplist)
+    return flist
+    #Sort the sub-array of negative numbers in descending order
+    #innersort(slist, 0, swapPos-1, 1, descending)
+    #Sort the sub-array of positive numbers in ascending order
+    #innersort(slist, swapPos, len(slist)-1, 1, ascending)
+
+"""def timedSorted():
+    sorted(testlist)
+def timedBitSort():
+    bitsort(tlist)
+
+tlist = []
+for x in range(1000000):
+    tlist.append(random.uniform(-100000000000, 1000000000000))
+
+tlist.append(0)
+testlist = tlist.copy()
+
+
+print(timeit.timeit(timedSorted, number=1))
+print(timeit.timeit(timedBitSort, number=1))
+
+#testlist = sorted(testlist)
+#tlist = bitsort(tlist)
+
+#print(testlist)
+#print(testlist2)
+if tlist == testlist:
+    print("True")"""

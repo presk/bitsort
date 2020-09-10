@@ -34,7 +34,7 @@
     0   0   0   0   1   1   0
     0   0   1   0   0   0   1
     1   0   1   1   1   1   1
-    1   0   1   1   0   0   1```
+    1   0   1   1   0   0   1
  After splitting negatives and positives you get:
     1   1   1   |   0   0   0   0
  ->{0   0   1}  |  {0   1   0   0}

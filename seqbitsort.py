@@ -1,14 +1,15 @@
+#!interpreter [optional-arg]
+# -*- coding: utf-8 -*-
+
 import struct
-import random
 from collections import deque 
-import timeit
+
 
 ascending = '0'
 descending = '1'
 
 
 #Converts each float to a string of their 64 bit IEEE 754 big endian representation
-#Taken from JavDomGom: https://stackoverflow.com/questions/16444726/binary-representation-of-float-in-python-bits-not-hex
 def float2bin(f):
     [d] = struct.unpack(">Q", struct.pack(">d", f))
     return f'{d:064b}'
@@ -45,10 +46,10 @@ def innersort(start, end, bit, order, flist, slist, oplist):
                     swap( i, swapPos, flist, slist)
                 swapPos += 1
         #Checks for the edge case where all the bits are identical and not leftmost (all 0s, but 1 is leftmost)
-        if swapPos == 0:
+        if swapPos == start:
             swapPos = end + 1
         #Execute recursively until you reach the last bit or until the sub-array's length is < 2
-        if bit < 63 :  
+        if bit < len(slist[0])-1 :  
             if start < swapPos-1:
                 oplist.append([start, swapPos-1, bit+1, order])
                 #innersort(slist, start, swapPos-1, bit+1, order)
@@ -67,7 +68,7 @@ def bitsort(floatList):
     #e.g. -9, -8, 8, 9   absolute negatives: 9, 8 (descending order) 
     #                    absolute positive:  8, 9 (ascending order)
     swapPos = 0
-    flist = floatList
+    flist = floatList.copy()
     slist = []
     oplist = deque()
     for i in range(len(flist)):
@@ -82,31 +83,4 @@ def bitsort(floatList):
         op = oplist.pop()
         innersort(op[0], op[1], op[2], op[3], flist, slist, oplist)
     return flist
-    #Sort the sub-array of negative numbers in descending order
-    #innersort(slist, 0, swapPos-1, 1, descending)
-    #Sort the sub-array of positive numbers in ascending order
-    #innersort(slist, swapPos, len(slist)-1, 1, ascending)
 
-"""def timedSorted():
-    sorted(testlist)
-def timedBitSort():
-    bitsort(tlist)
-
-tlist = []
-for x in range(1000000):
-    tlist.append(random.uniform(-100000000000, 1000000000000))
-
-tlist.append(0)
-testlist = tlist.copy()
-
-
-print(timeit.timeit(timedSorted, number=1))
-print(timeit.timeit(timedBitSort, number=1))
-
-#testlist = sorted(testlist)
-#tlist = bitsort(tlist)
-
-#print(testlist)
-#print(testlist2)
-if tlist == testlist:
-    print("True")"""

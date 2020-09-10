@@ -1,3 +1,6 @@
+#!interpreter [optional-arg]
+# -*- coding: utf-8 -*-
+
 import struct
 from collections import deque 
 
@@ -6,26 +9,25 @@ descending = '1'
 
 
 class Bitsort:
-    def __init__ (self, list):
-        self.list = list
+    def __init__ (self, nlist):
+        self.nlist = nlist.copy()
         slist = []
-        for i in range(len(list)):
-            slist.append(self.float2bin(list[i]))
+        for i in range(len(nlist)):
+            slist.append(self.float2bin(nlist[i]))
         self.slist = slist
         self.oplist = deque()
 
 
     #Converts each float to a string of their 64 bit IEEE 754 big endian representation
-    #Taken from JavDomGom: https://stackoverflow.com/questions/16444726/binary-representation-of-float-in-python-bits-not-hex
     def float2bin(self, f):
         [d] = struct.unpack(">Q", struct.pack(">d", f))
         return f'{d:064b}'
 
 
     def swap(self, currentPos, swapPos):
-        temp = self.list[swapPos]
-        self.list[swapPos] = self.list[currentPos]
-        self.list[currentPos] = temp
+        temp = self.nlist[swapPos]
+        self.nlist[swapPos] = self.nlist[currentPos]
+        self.nlist[currentPos] = temp
 
         temp = self.slist[swapPos]
         self.slist[swapPos] = self.slist[currentPos]
@@ -43,7 +45,7 @@ class Bitsort:
         while self.oplist:
             op = self.oplist.pop()
             self.innersort(op[0], op[1], op[2], op[3])
-        return self.list
+        return self.nlist
     
     
     def innersort(self, start, end, bit, order):
@@ -60,10 +62,10 @@ class Bitsort:
                     self.swap( i, swapPos)
                 swapPos += 1
         #Checks for the edge case where all the bits are identical and not leftmost (all 0s, but 1 is leftmost)
-        if swapPos == 0:
+        if swapPos == start:
             swapPos = end + 1
         #Execute recursively until you reach the last bit or until the sub-array's length is < 2
-        if bit < 63 :  
+        if bit < len(self.slist[0])-1 :  
             if start < swapPos-1:
                 self.oplist.append([start, swapPos-1, bit+1, order])
                 #innersort(slist, start, swapPos-1, bit+1, order)

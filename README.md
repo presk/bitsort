@@ -30,11 +30,11 @@
 
  Say you have the previous array unsorted as follows: 3, 0, -7, -3, 10, -10, 7
  This is the following bit representation:
- ```->{0   0   1   1   0   1   0}  
+ ->{0   0   1   1   0   1   0}  
     0   0   0   0   1   1   0
     0   0   1   0   0   0   1
     1   0   1   1   1   1   1
-    1   0   1   1   0   0   1```
+    1   0   1   1   0   0   1
  After splitting negatives and positives you get:
     1   1   1   |   0   0   0   0
  ->{0   0   1}  |  {0   1   0   0}
